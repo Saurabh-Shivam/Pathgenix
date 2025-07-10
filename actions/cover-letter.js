@@ -43,26 +43,46 @@ export async function generateCoverLetter(data) {
     Format the letter in markdown.
   `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const content = result.response.text().trim();
+  // Retry logic for 503 errors
+  const maxRetries = 2;
+  const retryDelay = 2000; // ms
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const content = result.response.text().trim();
 
-    const coverLetter = await db.coverLetter.create({
-      data: {
-        content,
-        jobDescription: data.jobDescription,
-        companyName: data.companyName,
-        jobTitle: data.jobTitle,
-        status: "completed",
-        userId: user.id,
-      },
-    });
+      const coverLetter = await db.coverLetter.create({
+        data: {
+          content,
+          jobDescription: data.jobDescription,
+          companyName: data.companyName,
+          jobTitle: data.jobTitle,
+          status: "completed",
+          userId: user.id,
+        },
+      });
 
-    return coverLetter;
-  } catch (error) {
-    console.error("Error generating cover letter:", error.message);
-    throw new Error("Failed to generate cover letter");
+      return coverLetter;
+    } catch (error) {
+      // If 503 error, retry
+      if (error.status === 503 && attempt < maxRetries - 1) {
+        await new Promise((res) => setTimeout(res, retryDelay));
+        continue;
+      }
+      // For other errors or after retries, show friendly message
+      console.error("Error generating cover letter:", error.message);
+      if (error.status === 503) {
+        throw new Error(
+          "The cover letter service is temporarily overloaded. Please try again in a few minutes."
+        );
+      } else {
+        throw new Error("Failed to generate cover letter");
+      }
+    }
   }
+  throw new Error(
+    "The cover letter service is temporarily overloaded. Please try again in a few minutes."
+  );
 }
 
 export async function getCoverLetters() {

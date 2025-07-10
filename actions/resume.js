@@ -86,13 +86,29 @@ export async function improveWithAI({ current, type }) {
     Format the response as a single paragraph without any additional text or explanations.
   `;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const improvedContent = response.text().trim();
-    return improvedContent;
-  } catch (error) {
-    console.error("Error improving content:", error);
-    throw new Error("Failed to improve content");
+  // Retry logic for 503 errors
+  const maxRetries = 2;
+  const retryDelay = 2000; // ms
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const improvedContent = response.text().trim();
+      return improvedContent;
+    } catch (error) {
+      // If 503 error, retry
+      if (error.status === 503 && attempt < maxRetries - 1) {
+        await new Promise(res => setTimeout(res, retryDelay));
+        continue;
+      }
+      // For other errors or after retries, show friendly message
+      console.error("Error improving content:", error);
+      if (error.status === 503) {
+        throw new Error("The resume improvement service is temporarily overloaded. Please try again in a few minutes.");
+      } else {
+        throw new Error("Failed to improve content");
+      }
+    }
   }
+  throw new Error("The resume improvement service is temporarily overloaded. Please try again in a few minutes.");
 }

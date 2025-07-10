@@ -28,12 +28,36 @@ export const generateAIInsights = async (industry) => {
           Include at least 5 skills and trends.
         `;
 
-  const result = await model.generateContent(prompt);
-  const response = result.response;
-  const text = response.text();
-  const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
-
-  return JSON.parse(cleanedText);
+  // Retry logic for 503 errors
+  const maxRetries = 2;
+  const retryDelay = 2000; // ms
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const text = response.text();
+      const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+      return JSON.parse(cleanedText);
+    } catch (error) {
+      // If 503 error, retry
+      if (error.status === 503 && attempt < maxRetries - 1) {
+        await new Promise((res) => setTimeout(res, retryDelay));
+        continue;
+      }
+      // For other errors or after retries, show friendly message
+      console.error("Error generating AI insights:", error);
+      if (error.status === 503) {
+        throw new Error(
+          "The industry insights service is temporarily overloaded. Please try again in a few minutes."
+        );
+      } else {
+        throw new Error("Failed to generate AI insights");
+      }
+    }
+  }
+  throw new Error(
+    "The industry insights service is temporarily overloaded. Please try again in a few minutes."
+  );
 };
 
 export async function getIndustryInsights() {
