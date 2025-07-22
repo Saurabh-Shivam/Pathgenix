@@ -1,7 +1,7 @@
+# Pathgenix - An AI-Powered Career Guidance Platform**
 
 https://github.com/user-attachments/assets/567cb2a3-ef65-40ca-b6b4-5918b196b0ce
 
-# Pathgenix - An AI-Powered Career Guidance Platform**
 **🔗 Project Link →** [https://pathgenix.vercel.app](https://pathgenix.vercel.app)
 
 ---
@@ -146,7 +146,3 @@ Currently under manual testing. For future iterations:
 ---
 
 **Built with ❤️ using Next.js, Prisma, Gemini AI, Tailwind, ShadCN, and more.**
-
-
-https://github.com/user-attachments/assets/94bb6eca-5c64-4160-9ff2-e52902670a56
-
